@@ -1,12 +1,32 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ProductComponent from "./ProductComponent";
+import { useLocation } from "react-router-dom";
 import useFetchData from "./useFetchData";
 
 function HomeComponent() {
   const { loading, products, error } = useFetchData();
+  const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchedProducts, setSearchedProducts] = useState([]);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const query = queryParams.get("search") || "";
+    setSearchQuery(query);
+  }, [location]);
+
+  useEffect(() => {
+    // Filter products based on the search query
+    const filteredProducts = products.filter((product) =>
+      product.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setSearchedProducts(filteredProducts);
+  }, [searchQuery, products]);
+
   if (error) {
     return <div>Error: {error.message}</div>;
   }
+
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-semibold text-center mb-6">All Items</h1>
@@ -36,7 +56,7 @@ function HomeComponent() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {searchedProducts.map((product) => (
               <ProductComponent key={product.id} product={product} />
             ))}
           </div>

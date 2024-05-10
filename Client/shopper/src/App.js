@@ -7,6 +7,7 @@ import HomeComponent from "./components/HomeComponent";
 import ProductDetailComponent from "./components/ProductDetailComponent";
 import OrderComponent from "./components/OrderComponent";
 import MyCartComponent from "./components/MyCartComponent";
+import TestComponent from "./components/TestComponent";
 
 function App() {
   return (
@@ -15,6 +16,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomeComponent />} />
         <Route path="/signup" element={<SignUpComponent />} />
+        <Route path="/test" element={<TestComponent />} />
+        <Route path="/products" element={<HomeComponent />} />
         <Route
           path="/login/:product?/:quantity?"
           element={<LoginComponent />}

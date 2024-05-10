@@ -64,7 +64,12 @@ app.post("/login", async (req, res) => {
       .cookie("token", token, { httpOnly: true })
       .json({
         message: "Login successful",
-        data: { email: email, token: token },
+        data: {
+          email: email,
+          firstName: result.rows[0].firstname,
+          lastName: result.rows[0].lastname,
+          token: token,
+        },
       });
   } catch (error) {
     console.error("Error logging in:", error);
@@ -83,17 +88,26 @@ app.delete("/logout", authenticateToken, async (req, res) => {
 app.get("/orders/:email", authenticateToken, async (req, res) => {
   const userId = req.params.email;
   try {
-    // Query to retrieve all orders for the given user
     const ordersQuery = `
-    SELECT o.order_id, oi.quantity, oi.item_id, o.price
+    SELECT o.order_id, 
+           o.price,
+           JSON_AGG(json_build_object(
+             'item_id', oi.item_id,
+             'quantity', oi.quantity,
+             'status', oi.status
+           )) AS order_items
     FROM Orders o
-     JOIN orderItems oi ON o.order_id = oi.order_id
+    JOIN orderItems oi ON o.order_id = oi.order_id
     WHERE o.user_id = $1
-    `;
-
+    GROUP BY o.order_id, o.price;
+  `;
     const { rows } = await pool.query(ordersQuery, [userId]);
-
-    res.json(rows);
+    const orders = rows.map((row) => ({
+      order_id: row.order_id,
+      price: row.price,
+      order_items: row.order_items,
+    }));
+    res.status(200).json(orders);
   } catch (error) {
     console.error("Error retrieving orders:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -143,22 +157,53 @@ app.get("/cart/:user_id", authenticateToken, async (req, res) => {
   }
 });
 
+app.put("/cart", authenticateToken, async (request, response) => {
+  const user_id = request.body.user_id;
+  const product_id = request.body.id;
+  const quantity = request.body.quantity;
+  try {
+    let result = null;
+    if (quantity > 0) {
+      result = await pool.query(
+        "UPDATE cart set quantity=$1 where user_id=$2 and product_id=$3",
+        [quantity, user_id, product_id]
+      );
+    } else {
+      result = await pool.query(
+        "delete from cart where user_id=$1 and product_id=$2",
+        [user_id, product_id]
+      );
+    }
+
+    response.status(200).send({ data: "success!" });
+  } catch (error) {
+    response.status(500).send({ message: "Internal error" });
+  }
+});
+
 app.post("/checkout", authenticateToken, async (req, res) => {
   const { cartItems, user_id, price } = req.body;
   try {
     const order = await pool.query(
-      "INSERT INTO orders(user_id, price,status) VALUES($1, $2,$3) RETURNING order_id,user_id",
-      [user_id, price, "Ordered"]
+      "INSERT INTO orders(user_id, price,status,order_date) VALUES($1, $2,$3,$4) RETURNING order_id,user_id",
+      [user_id, price, "Ordered", new Date()]
     );
-    console.log(order);
-    if (order.rowCount === 1) {
+    if (order.rowCount >= 1) {
+      var orderItems;
       for (let item of cartItems) {
-        let orderItems = await pool.query(
-          "INSERT INTO orderitems(item_id, order_id, quantity)VALUES ($1, $2, $3) ",
-          [item.id, order.rows[0].order_id, item.quantity]
+        orderItems = await pool.query(
+          "INSERT INTO orderitems(item_id, order_id, quantity,status)VALUES ($1, $2, $3,$4)",
+          [item.id, order.rows[0].order_id, item.quantity, "Ordered"]
         );
       }
-      res.status(200).send("Successful");
+      if (orderItems.rowCount >= 1) {
+        const result = await pool.query("delete from cart where user_id=$1", [
+          user_id,
+        ]);
+        if (result.rowCount >= 1) {
+          res.status(200).send("Success");
+        }
+      }
     }
   } catch (error) {
     res.status(500).send({ message: "Failed! Internal error!" });

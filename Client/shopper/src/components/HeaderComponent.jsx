@@ -1,9 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import "../App.css";
 import { Link, useNavigate } from "react-router-dom";
+import logo from "../images/logo.png";
 
 function HeaderComponent() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+  const handleSearchClick = () => {
+    if (searchQuery === "") navigate("/products");
+    else navigate(`/products?search=${searchQuery}`);
+  };
   const handleLogout = async (e) => {
     e.preventDefault();
     try {
@@ -24,10 +34,27 @@ function HeaderComponent() {
   const isLoggedIn = localStorage.getItem("loggedEmail");
   return (
     <header className="bg-indigo-300 text-white shadow-md">
-      <nav className="container mx-auto flex items-center justify-between py-4">
-        <Link to={"/"}>
-          <img src="logo.png" alt="My Cart Logo" className="h-10" />
-        </Link>
+      <nav className="container mx-auto flex items-center justify-between py-2">
+        <span>
+          <Link to={"/"}>
+            <img src={logo} alt="My Cart Logo" className="h-10" />
+          </Link>
+        </span>
+        <div className="flex justify-center items-center mb-2">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="w-48 sm:w-64 px-3 py-2 border border-gray-300 placeholder:text-gray-400 rounded-l-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-600"
+          />
+          <button
+            onClick={handleSearchClick}
+            className="px-2 sm:px-4 py-2 bg-indigo-500 text-white rounded-r-md hover:bg-indigo-600 focus:outline-none text-sm"
+          >
+            Search
+          </button>
+        </div>
         <ul className="flex space-x-4">
           <li>
             <Link to={"/cart"} className="hover:text-gray-300">

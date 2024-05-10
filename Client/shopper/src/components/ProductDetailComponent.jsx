@@ -33,12 +33,12 @@ function ProductDetailComponent() {
 
   const handleCheckout = (e) => {
     if (loggedUser) {
+      addToCart();
       navigate("/cart");
     } else {
       navigate(`/login/${productId}`);
     }
   };
-
   const handleQuantityChange = (e) => {
     setQuantity(parseInt(e.target.value));
   };
@@ -87,17 +87,25 @@ function ProductDetailComponent() {
           <div className="w-full md:w-1/2 mb-4 md:mb-0">
             <div className="flex justify-center">
               <div className="w-3/4">
-                <Slider {...settings}>
-                  {product.images.map((image, idx) => (
-                    <div key={idx}>
-                      <img
-                        src={image}
-                        alt={`${idx + 1}`}
-                        className="w-full max-h-96 object-contain"
-                      />
-                    </div>
-                  ))}
-                </Slider>
+                {product.images.length > 1 ? (
+                  <Slider {...settings}>
+                    {product.images.map((image, idx) => (
+                      <div key={idx}>
+                        <img
+                          src={image}
+                          alt={`${idx + 1}`}
+                          className="w-full max-h-96 object-contain"
+                        />
+                      </div>
+                    ))}
+                  </Slider>
+                ) : (
+                  <img
+                    src={product.images[0]}
+                    alt={`${0}`}
+                    className="w-full max-h-96 object-contain"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -132,7 +140,7 @@ function ProductDetailComponent() {
                 onClick={handleCheckout}
                 className="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 focus:outline-none focus:bg-gray-500"
               >
-                Checkout
+                Buy Now
               </button>
             </div>
           </div>

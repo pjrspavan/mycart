@@ -13,7 +13,7 @@ function ProductComponent(props) {
         <img
           src={product.images[0]}
           alt={product.title}
-          className="w-full h-48 object-cover"
+          className="w-full h-48 object-contain"
         />
         <div className="flex flex-col justify-between flex-1 p-4">
           <div>
